@@ -137,6 +137,7 @@ MCP が落ちてもコーチングは（精度を落として）成立させる�
 | 対象 | コマンド | 自動実行 |
 |------|----------|----------|
 | api 高速テスト | `./gradlew unitTest` | — |
+| api モジュール境界 | `./gradlew unitTest`（`ModularityTest` に含まれる） | — |
 | api ビルド + 統合テスト | `./gradlew build` | — |
 | api Lint / Format | `./gradlew detekt spotlessCheck` | **commit 時**（pre-commit hook） |
 | frontend Lint / Format | `npm run lint` / `npm run format:check` | **commit 時**（pre-commit hook） |
@@ -147,19 +148,19 @@ MCP が落ちてもコーチングは（精度を落として）成立させる�
 - 未導入のツールは hook 側が自動で skip する。導入すればそのまま有効になる
 - まとめて回すなら `/verification-loop` スキル
 
-## Current State（2026-08-18 時点）
+## Current State（2026-08-19 時点）
 
-まだ scaffold 直後。**存在しないものを前提にしたコードを書かないこと。**
+**存在しないものを前提にしたコードを書かないこと。**
 
 | 項目 | 状態 |
 |------|------|
-| `api` | Spring Initializr 直後。Modulith / DB / Flyway / Web 依存すべて未追加 |
+| `api` | Spring Web (webmvc) / Actuator / Validation / **Spring Modulith 2.0.5** 導入済み。DB / Flyway は未着手 |
+| モジュール境界 | `ModularityTest` が `ApplicationModules.verify()` を実行（`./gradlew unitTest` に含まれる） |
 | Lint / Format | **導入済み** — api: spotless(ktlint) + detekt / frontend: Prettier + ESLint |
 | pre-commit hook | **導入済み** — `scripts/.githooks/pre-commit`。`api/` で `./gradlew` を実行すると自動設定 |
-| `api` のパッケージ | **`com.upagu.api` のまま**（Initializr の指定ミス）。`com.aigamereview.api` に直す必要がある |
 | `frontend` | Vite scaffold 直後。Router / Query / 状態管理 / テストすべて未導入 |
 | ツールチェーン | kover / Vitest / Playwright / Orval / CI が未整備 |
-| Git | `git init` 済み（`main`、コミットなし）。初回コミットまで diff 前提のスキルは空振りする |
+| Git | 初回コミット済み（`main`）。pre-commit hook 稼働中 |
 | MCP サーバー | 未着手 |
 | インフラ / DB | 未着手 |
 
