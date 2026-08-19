@@ -1,0 +1,6 @@
+dist
+node_modules
+package-lock.json
+
+# Orval が生成するクライアント。手で整形しない（再生成で差分が出ると CI が落ちる）
+src/api

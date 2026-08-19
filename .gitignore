@@ -1,0 +1,19 @@
+# Local working files (handoff docs, reviews, scratch)
+local/
+
+# OS / IDE
+.DS_Store
+.idea/
+
+# api (Gradle)
+api/build/
+api/.gradle/
+api/.kotlin/
+
+# frontend (npm)
+frontend/node_modules/
+frontend/dist/
+
+# Secrets
+.env
+.env.local

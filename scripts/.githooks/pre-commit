@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+# リポジトリ全体の pre-commit hook。
+# api (Kotlin) / frontend (TS) を staged ファイルのパスで振り分けてフォーマッタ+リンタを実行する。
+#
+# 有効化: git config core.hooksPath scripts/.githooks
+# (api/ で ./gradlew を一度でも実行すると installGitHooks タスク経由で自動設定される)
+#
+# 未導入のツール (spotless / detekt / prettier) は skip する。
+# build.gradle.kts / package.json に入った時点で自動的に有効になる。
+set -euo pipefail
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+cd "$ROOT_DIR"
+
+STAGED="$(git diff --cached --name-only --diff-filter=ACM)"
+
+fail() {
+    echo "[pre-commit] FAILED: $1" >&2
+    exit 1
+}
+
+skip() {
+    echo "[pre-commit] skip: $1"
+}
+
+# api/build.gradle.kts に該当プラグインが入っているか。未導入のタスクを叩いて落ちないようにする。
+gradle_has() {
+    grep -q "$1" api/build.gradle.kts 2>/dev/null
+}
+
+run_api() {
+    local files
+    files="$(echo "$STAGED" | grep -E '^api/.*\.(kt|kts)$' || true)"
+    if [ -z "$files" ]; then
+        return 0
+    fi
+    if [ ! -x "api/gradlew" ]; then
+        fail "api/gradlew not found. Run from a full checkout."
+    fi
+
+    if gradle_has "spotless"; then
+        echo "[pre-commit] api: spotlessApply"
+        (cd api && ./gradlew spotlessApply --daemon -q)
+        echo "$files" | xargs git add
+    else
+        skip "api spotless (未導入)"
+    fi
+
+    local checks=()
+    gradle_has "spotless" && checks+=("spotlessCheck")
+    gradle_has "detekt" && checks+=("detekt")
+    if [ ${#checks[@]} -gt 0 ]; then
+        echo "[pre-commit] api: ${checks[*]}"
+        (cd api && ./gradlew "${checks[@]}" --daemon -q) || fail "api lint/format check failed. Fix the issues above and re-commit."
+    else
+        skip "api lint checks (未導入)"
+    fi
+}
+
+run_frontend() {
+    local files rel_files
+    files="$(echo "$STAGED" | grep -E '^frontend/.*\.(ts|tsx|js|jsx)$' || true)"
+    if [ -z "$files" ]; then
+        return 0
+    fi
+    if [ ! -d "frontend/node_modules" ]; then
+        fail "frontend/node_modules not found. Run 'npm ci' in frontend/ first."
+    fi
+    rel_files="$(echo "$files" | sed 's#^frontend/##')"
+
+    if [ -x "frontend/node_modules/.bin/prettier" ]; then
+        echo "[pre-commit] frontend: prettier --write"
+        (cd frontend && echo "$rel_files" | xargs npx --no-install prettier --write)
+    else
+        skip "frontend prettier (未導入)"
+    fi
+
+    echo "[pre-commit] frontend: eslint --fix"
+    (cd frontend && echo "$rel_files" | xargs npx --no-install eslint --fix)
+    echo "$files" | xargs git add
+    echo "[pre-commit] frontend: eslint check"
+    (cd frontend && echo "$rel_files" | xargs npx --no-install eslint) || fail "frontend lint check failed. Fix the issues above and re-commit."
+}
+
+# OpenAPI スキーマだけ更新して orval を回し忘れるのを止める。
+# 完全な検証は CI (npm run api:check) が行う。ここは staged ファイルの整合だけを見る安価なチェック。
+check_openapi_client_drift() {
+    local schema_staged client_staged
+    schema_staged="$(echo "$STAGED" | grep -E '^api/openapi\.(json|yaml)$' || true)"
+    [ -z "$schema_staged" ] && return 0
+    [ -d "frontend/src/api" ] || return 0
+
+    client_staged="$(echo "$STAGED" | grep -E '^frontend/src/api/' || true)"
+    if [ -z "$client_staged" ]; then
+        fail "OpenAPI スキーマだけが staged で、生成クライアント (frontend/src/api/) に差分がない。
+         'cd frontend && npm run api:generate' を実行して結果を commit に含めること。
+         スキーマ変更がクライアントに影響しないと確信できる場合のみ --no-verify で回避可。"
+    fi
+}
+
+run_api
+run_frontend
+check_openapi_client_drift
+
+echo "[pre-commit] All checks passed."
+
+# 個人用 hook があれば実行 (git 管理外)
+PERSONAL_HOOK="$ROOT_DIR/.git/hooks/pre-commit.local"
+if [ -x "$PERSONAL_HOOK" ]; then
+    echo "[pre-commit] Running personal hook..."
+    "$PERSONAL_HOOK" "$@"
+fi

@@ -1,0 +1,15 @@
+{
+  "enabledMcpjsonServers": [],
+  "env": {
+    "GITHUB_PERSONAL_ACCESS_TOKEN": "",
+    "FIGMA_API_KEY": "",
+    "NOTION_TOKEN": "",
+    "POSTGRES_CONNECTION_STRING": "",
+    "JIRA_URL": "",
+    "JIRA_USERNAME": "",
+    "JIRA_API_TOKEN": "",
+    "CONFLUENCE_URL": "",
+    "CONFLUENCE_USERNAME": "",
+    "CONFLUENCE_API_TOKEN": ""
+  }
+}

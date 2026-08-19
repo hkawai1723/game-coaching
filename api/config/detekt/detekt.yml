@@ -1,0 +1,29 @@
+# detekt の上書き設定。buildUponDefaultConfig = true なので、ここに書いたものだけがデフォルトを上書きする。
+# 書式系 (formatting) は ktlint (spotless) が担当するため detekt では扱わない。
+
+style:
+  MaxLineLength:
+    # .editorconfig の max_line_length = 140 に合わせる
+    maxLineLength: 140
+  ForbiddenComment:
+    # TODO はコードではなく Jira (GAME) で管理する
+    comments:
+      - reason: 'TODO はコードに残さず Jira (GAME) でチケット化する'
+        value: 'TODO:'
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: true
+  SwallowedException:
+    # 例外を握り潰さない。外部 API 境界でも理由をログに残すこと
+    active: true
+
+empty-blocks:
+  EmptyFunctionBlock:
+    # Spring の contextLoads() のように、起動確認そのものが目的で本体が空になるテストがある
+    excludes: ['**/test/**']
+
+naming:
+  FunctionNaming:
+    # テストの関数名はバッククォート付きの日本語/英文を許可する
+    excludes: ['**/test/**']
