@@ -10,7 +10,7 @@
 | 2 | Build + Test（統合含む） | `./gradlew build` | 利用可 | STOP。以降のゲートを回さず修正する |
 | 3 | Lint | `./gradlew detekt` | 利用可 | 報告して修正（`autoCorrect = false` なので手で直す） |
 | 4 | Format | `./gradlew spotlessCheck` | 利用可 | 報告。`--with-fix` 時のみ `spotlessApply` |
-| 5 | Coverage (kover) | `./gradlew koverVerify` | **未導入** | — |
+| 5 | Coverage (kover) | `./gradlew koverVerify` | 利用可 | 報告して修正。閾値は `build.gradle.kts` の `kover.reports.verify.rule.minBound` |
 
 ```bash
 cd api
@@ -27,7 +27,8 @@ cd api
 
 ## 注意点
 
-- **`koverVerify` はまだ無い。** 実行すると "Task not found" で落ちる。レポートには `SKIP (未導入)` と書く
+- **`koverVerify` は `test` と `unitTest` の両方に依存する。** 統合テストも含めた実行結果を対象にカバレッジを
+  測る。単独の高速ゲートではないので、実装中のループには含めず `build` の後にまとめて回す
 - **`unitTest` と `test` は別物。** `unitTest` は `@Tag("integration")` を除外した高速テスト
   （Spring コンテキストを起動しない）。実装中の検証ループはこちらを回す
 - **モジュール境界違反は `unitTest` で落ちる。** `ModularityTest` が `ApplicationModules.verify()` を

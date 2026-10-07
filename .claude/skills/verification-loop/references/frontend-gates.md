@@ -10,28 +10,30 @@
 | 2 | Type check + Build | `npm run build` | 利用可 | STOP。以降のゲートを回さず修正する |
 | 3 | Format | `npm run format:check` | 利用可 | 報告。`--with-fix` 時のみ `npm run format` |
 | 4 | API クライアント drift | `npm run api:check` | Orval 導入後 | **FAIL 扱い**。`npm run api:generate` して commit |
-| 5 | Unit test + Coverage | `npm run test:coverage` | **未導入 (Vitest)** | — |
+| 5 | Unit test + Coverage | `npm run test:coverage` | 利用可 | 報告して修正。閾値は `vitest.config.ts` の `coverage.thresholds` |
 
 ```bash
 cd frontend
 npm run lint
 npm run build
 npm run format:check
+npm run test:coverage
 ```
 
 ## 注意点
 
 - **`package.json` に無いスクリプトを叩かない。** 現在あるのは `dev` / `build` / `lint` / `format` /
-  `format:check` / `preview`。`test` / `api:check` は存在しない。レポートには `SKIP (未導入)` と書く
+  `format:check` / `preview` / `test:run` / `test:coverage` / `e2e`。`test` / `api:check` は存在しない。
+  レポートには `SKIP (未導入)` と書く
 - **Orval 生成物 (`src/api/**`) の差分を「無関係な変更」として無視しない。** 差分が出ている＝
   生成し直していないか、api 側のスキーマが変わったということ。必ず報告する
 - **`npm run build` は `tsc -b && vite build`。** 型チェックがビルドに内包されているので、別途
   `npx tsc --noEmit` を回す必要はない。二重実行になる
 - **`npm run dev` を検証で使わない。** サーバーが起動したまま戻ってこない。ビルドの確認は `build`
-- Vitest 導入後は `npm run test` ではなく `test:run`（= `vitest run`）を使う。`test` は watch モードに
-  入って戻ってこない
+- `npm run test` ではなく `test:run`（= `vitest run`）を使う。watch モードに入って戻ってこないので、
+  `test` スクリプトはあえて定義していない
 - `node_modules` が無ければ先に `npm ci`。`npm install` ではなく `npm ci`（CI と同じ解決にするため）
-- E2E (Playwright) はこのスキルの対象外。ブラウザ起動を伴い桁違いに遅いので、明示的に頼まれたときだけ回す
+- E2E (Playwright, `npm run e2e`) はこのスキルの対象外。ブラウザ起動を伴い桁違いに遅いので、明示的に頼まれたときだけ回す
 
 ## ツール導入時にやること
 

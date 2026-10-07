@@ -13,7 +13,7 @@ paths:
 |------|--------|----------|------|
 | Formatter | spotless + ktlint 1.5.0 | `./gradlew spotlessApply` | 導入済み |
 | Linter | detekt | `./gradlew detekt` | 導入済み |
-| Coverage | kover | `./gradlew koverVerify` | **未導入**（コードが増えてベースラインが取れてから） |
+| Coverage | kover 0.9.1 | `./gradlew koverVerify` | 導入済み。現状は `minBound(0)`（コードが無いためラチェットの床がまだ 0） |
 
 - 書式のルールは `.editorconfig`（リポジトリルート / indent=4, max_line_length=140, intellij_idea style）が正。
   ktlint がこれを読む

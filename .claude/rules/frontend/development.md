@@ -19,8 +19,8 @@ Vite で scaffold した直後の状態。**未導入のライブラリを前提
 | サーバー状態 | TanStack Query | **未導入** |
 | クライアント状態 | Zustand | **未導入** |
 | HTTP クライアント | ky | **未導入** |
-| Unit / Component テスト | Vitest + React Testing Library | **未導入** |
-| E2E | Playwright | **未導入** |
+| Unit / Component テスト | Vitest + React Testing Library | 導入済み（`npm run test:run` / `test:coverage`。閾値は 0 から始めるラチェット運用） |
+| E2E | Playwright | 導入済み（`npm run e2e`。chromium のみ。日常のゲートには含めない） |
 | UI コンポーネント | shadcn/ui | **未導入** |
 
 採用予定は `../upagu` の web と揃えてある（同じ人が両方を触るため）。変える場合は先に相談する。
@@ -94,7 +94,7 @@ pre-commit hook にも安価な整合チェックを入れてある（`api/opena
 |------|--------|------|
 | Unit | Vitest | ユーティリティ関数、hooks、store |
 | Component | Vitest + React Testing Library | コンポーネントの振る舞い |
-| E2E | Playwright | ユーザーフロー全体（動画アップロード → 解析待ち → フィードバック表示） |
+| E2E | Playwright | ユーザーフロー全体（試合の選択 → 解析待ち → フィードバック表示） |
 
 ### テスト方針
 

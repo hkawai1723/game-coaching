@@ -5,6 +5,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
     id("com.diffplug.spotless") version "7.0.4"
     id("dev.detekt") version "2.0.0-alpha.3"
+    id("org.jetbrains.kotlinx.kover") version "0.9.1"
 }
 
 group = "com.aigamereview"
@@ -92,6 +93,31 @@ spotless {
         gson()
             .indentWithSpaces(2)
             .sortByKeys()
+    }
+}
+
+// Coverage: kover。unitTest（Spring 起動なし）だけを対象にする。
+// integration/external タグのテストは検証ループの外なので、カバレッジ計測にも含めない。
+kover {
+    currentProject {
+        instrumentation {
+            // Spring Boot のエントリポイントはロジックを持たないので計測対象から外す。
+            excludedClasses.add("com.aigamereview.api.ApiApplicationKt")
+        }
+    }
+    reports {
+        filters {
+            excludes {
+                classes("com.aigamereview.api.ApiApplication")
+            }
+        }
+        verify {
+            rule {
+                // 現状はドメインロジックが無いためカバレッジ実体もゼロ。
+                // コードが増えるたびに閾値を上げるラチェット運用にする（.claude/rules/api/kotlin-coding-style.md）。
+                minBound(0)
+            }
+        }
     }
 }
 

@@ -171,9 +171,9 @@ MCP という形式にするかは未決定（Open Decisions #2）。
 | モジュール境界 | `ModularityTest` が `ApplicationModules.verify()` を実行（`./gradlew unitTest` に含まれる） |
 | Lint / Format | **導入済み** — api: spotless(ktlint) + detekt / frontend: Prettier + ESLint |
 | pre-commit hook | **導入済み** — `scripts/.githooks/pre-commit`。`api/` で `./gradlew` を実行すると自動設定 |
-| `frontend` | Vite scaffold 直後。Router / Query / 状態管理 / テストすべて未導入 |
-| ツールチェーン | kover / Vitest / Playwright / Orval / CI が未整備 |
-| Git | 初回コミット済み（`main`）。pre-commit hook 稼働中 |
+| `frontend` | Vite scaffold 直後。Router / Query / 状態管理は未導入。Vitest + RTL / Playwright は導入済み |
+| ツールチェーン | kover / Vitest / Playwright 導入済み（閾値は 0 から始めるラチェット運用）。Orval / CI は未整備 |
+| Git | `main` + 作業ブランチ。pre-commit hook 稼働中 |
 | 対象タイトル | **LoL (PC)**。Wild Rift は保留（ADR-0012） |
 | Riot API 連携 / Knowledge | 未着手 |
 | インフラ / DB | 未着手 |
