@@ -1,6 +1,6 @@
 # ADR-NNNN: <決定を一文で>
 
-- **Status**: Proposed | Accepted | Superseded by ADR-NNNN | Deprecated
+- **Status**: Proposed | Accepted | Superseded by ADR-NNNN | Deprecated | Deferred
 - **Date**: YYYY-MM-DD
 - **Deciders**: <決めた人>
 

@@ -2,7 +2,8 @@
 
 ## This Repository
 
-**ai-game-review** は Wild Rift（モバイル版 LoL）のプレイ動画を解析して AI コーチングを行うプロダクト。
+**ai-game-review** は League of Legends (PC) の試合データを解析して AI コーチングを行うプロダクト。
+最初の対象は LoL (PC)。Wild Rift（モバイル版）は当面保留（ADR-0012）。
 
 | ディレクトリ | 役割 | スタック |
 |-------------|------|---------|
@@ -22,20 +23,29 @@
 
 ## Product Overview
 
-プレイヤーが自分の試合動画をアップロードすると、AI がプレイを振り返ってコーチングする。
+プレイヤーが自分の Riot アカウントを指定すると、AI が試合を振り返ってコーチングする。
 
 ```
-動画アップロード
+試合データ取得（Riot API: match-v5 + timeline）
    ↓
-プレイ行動の言語化（Gemini の動画理解）      ← 「何が起きたか」を構造化された行動ログに
+行動ログの組み立て（決定論的。LLM 不使用）       ← 「何が起きたか」を構造化された行動ログに
    ↓
 コーチングフィードバック生成（Claude or Gemini） ← 「どうすべきだったか」
    ↓
 フィードバック表示
 ```
 
-**Wild Rift には公開 API が存在しない**（Riot の Developer API は LoL(PC) / TFT / LoR / Valorant のみ）。
-そのため試合データの入力経路は動画のみ。ここが LoL(PC) との決定的な違い。
+**事実（数値・イベント）は Riot API が正。LLM には解釈だけさせる。** Phase 1 で LLM を使うのはコーチング生成だけ。
+
+Riot API のデータは**全知視点**（敵の位置も入っている）で、プレイヤーに見えていたかは分からない。
+「データにはあるがプレイヤーには見えていなかった情報」でプレイヤーを責めないこと
+（`docs/coaching/requirements/coaching-quality.md` FR-5）。
+
+### Wild Rift（保留中）
+
+最初は Wild Rift を対象にしていた。Wild Rift には公開 API が無いので入力は動画のみになり、
+動画解析パイプライン（ADR-0007）を設計していた。2026-10-07 に LoL (PC) を先にすると決め、
+関連 ADR（0003 / 0007 / 0009）は Deferred、0002 は Superseded にした。設計は `docs/` に残してある。
 
 ## Architecture
 
@@ -46,18 +56,19 @@ React SPA (Vite)
       |
    api (Kotlin / Spring Modulith — modular monolith)
    ├── api/web    クライアント向けプレゼンテーション層（Cookie 管理、DTO 変換）
-   ├── match      試合の受付・動画メタデータ・解析ジョブ
-   ├── analysis   動画 → プレイ行動の言語化
+   ├── match      試合の受付（Riot API から取得）・解析ジョブ
+   ├── analysis   試合データ → 構造化された行動ログ
    ├── coaching   行動ログ → フィードバック生成
-   ├── knowledge  Wild Rift ナレッジ（チャンピオン / アイテム / パッチ）
+   ├── combat     戦闘勝率の決定論的計算（ADR-0010。未着手）
+   ├── knowledge  LoL ナレッジ（チャンピオン / アイテム / パッチ）
    ├── user       ユーザープロフィール
    └── payment    決済・サブスク（upagu と共用する再利用モジュール）
       |        \         \              \
     REST        \         \              \
       |          \         \              \
-  auth-api    PostgreSQL   オブジェクトストレージ   LLM API (Gemini / Claude)
-  (別リポジトリ)              (動画)                      |
-      |                                              MCP サーバー（Wild Rift 情報）
+  auth-api    PostgreSQL   Riot API                LLM API (Claude / Gemini)
+  (別リポジトリ)            (match-v5 / Data Dragon)
+      |
    Cognito
 ```
 
@@ -68,10 +79,11 @@ React SPA (Vite)
 | Cognito      | 認証基盤（auth-api の内部実装。このリポジトリからは見えない） |
 | auth-api     | IdentityProvider 抽象化、独自 JWT 発行 (ES256)、RBAC |
 | api/web      | Web 向け REST。refresh_token を HttpOnly Cookie で管理 |
-| api/match    | 動画の受付、解析ジョブの状態管理 |
-| api/analysis | 動画 → 行動ログ。LLM プロバイダーを port の裏に隠す |
-| api/coaching | 行動ログ + ナレッジ → フィードバック |
-| api/knowledge| MCP 経由で Wild Rift の静的情報を提供 |
+| api/match    | Riot API からの試合取得、解析ジョブの状態管理。Riot API の型を port の裏に隠す |
+| api/analysis | 試合データ → 行動ログ（決定論的） |
+| api/coaching | 行動ログ + ナレッジ → フィードバック。LLM プロバイダーを port の裏に隠す |
+| api/combat   | 戦闘勝率の計算。外部 I/O なしの純粋ドメイン、プロダクト非依存（ADR-0010） |
+| api/knowledge| LoL の静的情報を提供（Data Dragon が一次情報源） |
 | api/payment  | 決済 (Stripe)、サブスクリプション管理。**プロダクト非依存** |
 
 ### JWT Verification
@@ -82,11 +94,12 @@ React SPA (Vite)
 - api は auth-api の EC 公開鍵で署名検証する。Cognito を直接知らない
 - 詳細な仕様: `../upagu-auth-api/docs/auth-api-specification.md`
 
-### MCP
+### Knowledge
 
-Wild Rift のチャンピオン / アイテム / ルーン / パッチ情報は **自作の MCP サーバー** から取得する。
-`knowledge` モジュールが MCP クライアントを内包し、他モジュールには公開 API だけを見せる。
-MCP が落ちてもコーチングは（精度を落として）成立させる。必須依存にしない。
+LoL のチャンピオン / アイテム / ルーン / パッチ情報は **Riot 公式の Data Dragon** を一次情報源にする。
+`knowledge` モジュールが取得手段を内包し、他モジュールには公開 API だけを見せる。
+MCP という形式にするかは未決定（Open Decisions #2）。
+ナレッジが引けなくてもコーチングは（精度を落として）成立させる。必須依存にしない。
 
 ## Module Boundaries
 
@@ -99,9 +112,9 @@ MCP が落ちてもコーチングは（精度を落として）成立させる�
 
 ### payment は再利用モジュール
 
-`payment` は **upagu でも使う**。将来ライブラリまたは独立サービスとして切り出せる状態を保つ。
+`payment` は **upagu という別プロダクトでも使う**。将来ライブラリまたは独立サービスとして切り出せる状態を保つ。
 
-- Wild Rift / コーチングのドメイン語彙を payment 内に持ち込まない
+- LoL / コーチングのドメイン語彙を payment 内に持ち込まない
 - 依存の向きは他モジュール → `payment` の一方通行。逆はイベント購読も含めて禁止
 - 判断基準は「このモジュールを別リポジトリにコピーしたら動くか」
 
@@ -116,7 +129,7 @@ MCP が落ちてもコーチングは（精度を落として）成立させる�
 アジャイル開発。詳細は `.claude/rules/common/agile-process.md`。
 
 - **スクラムベース** — ストーリー単位。上流工程 → 実装 → レビューのサイクル
-- **チケット管理** — Jira `Gaming` プロジェクト（キー `GAME` / `https://upagu.atlassian.net`）。
+- **チケット管理** — Jira `AI coaching` プロジェクト（キー `COACH` / `https://upagu-gaming.atlassian.net`）。
   ストーリーポイントと期日を必ず設定する
 - **仕様書・設計書** — `docs/<bounded-context>/` で Bounded Context ごとに管理（Git 追跡対象）
 - **ADR** — `docs/adr/`。特に **LLM のプロバイダー選定・プロンプト設計の変更は必ず記録する**
@@ -127,7 +140,7 @@ MCP が落ちてもコーチングは（精度を落として）成立させる�
 - **OOP / SOLID** — 厳格に遵守。composition over inheritance
 - **TDD** — テストファースト、80%+ カバレッジを目標
 - **Error Response** — RFC 9457 (Problem Details for HTTP APIs) 準拠
-- **外部依存は port で反転** — LLM / ストレージ / MCP / Riot API の型をドメイン層に漏らさない
+- **外部依存は port で反転** — LLM / Riot API / ストレージ / MCP の型をドメイン層に漏らさない
 - **LLM 呼び出しは非同期・冪等・キャッシュ可能に** — コストが支配的なため
 - **ドメイン層のテストは Spring を使わない** — AI 駆動で開発するため検証ループの速さが生産性を決める。
   `./gradlew unitTest` が数秒で回ることを維持する（詳細: `.claude/rules/api/development.md`）
@@ -148,7 +161,7 @@ MCP が落ちてもコーチングは（精度を落として）成立させる�
 - 未導入のツールは hook 側が自動で skip する。導入すればそのまま有効になる
 - まとめて回すなら `/verification-loop` スキル
 
-## Current State（2026-08-19 時点）
+## Current State（2026-10-07 時点）
 
 **存在しないものを前提にしたコードを書かないこと。**
 
@@ -161,24 +174,30 @@ MCP が落ちてもコーチングは（精度を落として）成立させる�
 | `frontend` | Vite scaffold 直後。Router / Query / 状態管理 / テストすべて未導入 |
 | ツールチェーン | kover / Vitest / Playwright / Orval / CI が未整備 |
 | Git | 初回コミット済み（`main`）。pre-commit hook 稼働中 |
-| MCP サーバー | 未着手 |
+| 対象タイトル | **LoL (PC)**。Wild Rift は保留（ADR-0012） |
+| Riot API 連携 / Knowledge | 未着手 |
 | インフラ / DB | 未着手 |
 
 導入したら `.claude/rules/` と `.claude/skills/verification-loop/references/` の状態表を更新すること。
 
 ## Roadmap
 
-### Phase 1（現在）— 外部 LLM で成立させる
+### Phase 1（現在）— LoL (PC) を Riot API + 外部 LLM で成立させる
 
-Gemini で言語化 → Claude/Gemini でフィードバック。まず「使えるコーチング」の基準を作る。
+Riot API で事実を取り → 決定論的に行動ログを作り → Claude/Gemini でフィードバック。
+まず「使えるコーチング」の基準を作る。差別化はデータ量ではなくコーチング品質
+（指摘の絞り込み、宿題の機械検証、意図の入力。`docs/coaching/requirements/coaching-quality.md`）。
 
-### Phase 2 — 自社 AI
+**その後に効くのは今フェーズで貯めるデータ**なので、Phase 1 の時点で:
 
-将来的に解析を内製する。**その時に効くのは今フェーズで貯めるデータ**なので、Phase 1 の時点で:
-
-- アップロードされた動画、生成された行動ログ、フィードバック、ユーザーの反応を
-  **後から学習・評価に使える形で保存する**（利用規約・同意の設計も込みで）
+- 試合データ、生成された行動ログ、フィードバック、ユーザーの反応を
+  **後から学習・評価に使える形で保存する**（Riot の利用規約・ユーザー同意の設計も込みで）
 - 「良いコーチングとは何か」の評価セットを作る。人手で正解を付けた試合を数十件持つ
+
+### Phase 2 以降 — 動画と Wild Rift（順序・時期は未定）
+
+Riot API の timeline は 1 分間隔なので、ミクロ（操作・位置取り）は取れない。
+ここを扱うには動画が要り、Wild Rift はそもそも動画しか入力が無い。どちらも動画の知覚層が前提になる。
 
 内製の切り分けは 2 層で考える:
 
@@ -189,25 +208,25 @@ Gemini で言語化 → Claude/Gemini でフィードバック。まず「使え
   ここは LLM の領分。自前で LLM を訓練するのではなく、プロンプト + 構造化出力 + ナレッジ参照で
   精度を出し、必要なら後から蒸留する
 
-`PlayNarrator` port（`.claude/rules/api/patterns.md`）が知覚層の差し替え境界。
-Phase 2 はこの port の実装を差し替えるだけで済むように設計する。
+`PlayNarrator` port（ADR-0003）が動画の知覚層の差し替え境界。
+動画を足すときはこの port の実装から始める（ADR-0003 / 0007 は Deferred。そのとき見直す）。
 
-### Phase 3 — LoL (PC) 対応
-
-LoL は Riot API（`match-v5` 等）から構造化データが取れるため、動画解析なしでも成立する。
-**同一アプリにするかは未定。** `MatchSource` port とタイトルの値オブジェクト `GameTitle` で
-拡張の余地だけ残し、LoL 固有の実装は書かない（YAGNI）。
+Wild Rift を再開するときは `MatchSource` に `VideoMatchSource` を足す。`GameTitle`（`LOL` / `WILD_RIFT`）で
+拡張の余地だけ残し、Wild Rift 固有の実装は今は書かない（YAGNI）。
 
 ## Open Decisions（未決定）
 
 決めずに進んでいるもの。**未決定を前提にした実装をしないこと。** 決まったらここを更新する。
 
-1. **フィードバック生成のモデル** — Gemini で言語化した後、Claude と Gemini のどちらに投げるか
-2. **MCP サーバーの置き場所** — このリポジトリ内 / 別リポジトリ
-3. **LoL 対応時のアプリ構成** — 同一アプリ / 別アプリ
-4. **DB・オブジェクトストレージの構成** — PostgreSQL + S3 想定だが未着手
+1. **フィードバック生成のモデル** — Claude と Gemini のどちらにするか。Phase 1 で LLM を使うのはここだけ
+2. **ナレッジを MCP にするか・置き場所** — MCP にする / モジュール内で直接取得 / 既存の LoL 用 MCP を使う
+3. **Wild Rift 再開時のアプリ構成** — 同一アプリ / 別アプリ（再開時期も未定）
+4. **DB の構成** — PostgreSQL 想定だが未着手。動画を扱わないのでオブジェクトストレージは Phase 1 では不要の見込み
 5. **フロントの採用ライブラリ** — upagu の web に揃える前提（TanStack Router/Query, Zustand, ky, Orval）だが未導入
-6. **課金モデル** — 解析 1 回あたりの LLM コストが高いので、従量 / 定額の設計が必要
+6. **課金モデル** — 従量 / 定額。Riot の Developer Policies で有料提供の条件を確認してから決める
+7. **Riot API の利用条件** — Production API Key の申請、コーチング用途の可否、データ保存・二次利用の範囲。**未確認**
+8. **Riot アカウントの紐付け** — Riot ID 入力だけ（所有確認なし）/ RSO（Riot Sign On。審査あり）
+9. **`combat` の MVP カバー範囲** — 対象チャンピオン / アイテム（ADR-0010）
 
 ## Handoff
 

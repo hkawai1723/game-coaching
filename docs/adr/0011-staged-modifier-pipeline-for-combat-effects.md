@@ -4,6 +4,8 @@
 - **Date**: 2026-08-22
 - **Deciders**: h.kawai
 
+> 2026-10-07 注記（[ADR-0012](0012-lol-pc-as-first-title.md)）: 最初の対象は LoL (PC) になった。手順 A のデータ源は Riot 公式の Data Dragon が第一候補になる（本文の Fandom Wild Rift wiki / WildRiftFire は Wild Rift 用）。段階列の実測確認は LoL の練習ツールで行う。
+
 ## Context
 
 ADR-0010 で `combat` を決定論的な数値計算モジュールとして作ると決めた。

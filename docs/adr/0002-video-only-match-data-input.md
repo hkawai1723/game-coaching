@@ -1,8 +1,10 @@
 # ADR-0002: 試合データの入力経路を動画のみとする
 
-- **Status**: Accepted
+- **Status**: Superseded by ADR-0012
 - **Date**: 2026-08-19
 - **Deciders**: h.kawai
+
+> 2026-10-07: 最初の対象タイトルを LoL (PC) に変えたため、入力経路を Riot API に置き換えた。詳細は [ADR-0012](0012-lol-pc-as-first-title.md)。本文は決定時のまま残す。
 
 ## Context
 

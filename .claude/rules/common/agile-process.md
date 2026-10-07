@@ -24,17 +24,22 @@
 
 ## Jira (WBS Management)
 
-- サイト: `https://upagu.atlassian.net`（cloudId: `ede4db40-1922-42bc-8bf9-4fbb9717b857`）
-- **このプロダクトのプロジェクト: `Gaming`（プロジェクトキー `GAME`）**
-- 他プロジェクト: `AUTH`（auth-api）、`CORE`（upagu）、`INTERNAL`（社内ツール）。
-  **このリポジトリの作業は必ず `GAME` に切る。** upagu と共用する `payment` の変更も `GAME` 側で管理し、
-  upagu への影響がある場合は `CORE` に連携チケットを作る
-- 課題タイプ: エピック → ストーリー / タスク / Feature / バグ → サブタスク（日本語名。作成時は正式名で指定する）
+- サイト: `https://upagu-gaming.atlassian.net`（このプロダクト専用サイト）
+- **このプロダクトのプロジェクト: `AI coaching`（プロジェクトキー `COACH`）**
+- ボード: `SCRUM board`（board id `1`。チーム管理対象プロジェクト）
+- **このリポジトリの作業は必ず `COACH` に切る。** upagu と共用する `payment` の変更も `COACH` 側で管理し、
+  upagu への影響がある場合は別サイトの `CORE` に連携チケットを作る
+- 別サイト `https://upagu.atlassian.net`（cloudId: `ede4db40-1922-42bc-8bf9-4fbb9717b857`）に
+  `AUTH`（auth-api）/ `CORE`（upagu）/ `INTERNAL`（社内ツール）がある。**サイトが分かれているので接続先を間違えないこと**
+- アクセスは root の `.mcp.json`（`mcp-atlassian` / uvx）経由。認証情報は環境変数
+  `JIRA_URL` / `JIRA_USERNAME` / `JIRA_API_TOKEN`（Confluence も同様）を参照する
+- 課題タイプ: `エピック` → `ストーリー` / `タスク` → `Subtask`（日本語名。作成時は正式名で指定する。
+  `Feature` / `バグ` は未設定なので使わない）
 - **ストーリーポイント** — 全 Story に必須。フィボナッチ (1, 2, 3, 5, 8, 13)
 - **期日** — 全 Story / Task に必須。スプリント終了日以内
 - ステータス: To Do → In Progress → In Review → Done
-- Epic はプロダクト機能単位 (例: 動画解析 MVP)
-- Story はユーザー価値単位 (例: 「プレイヤーとして試合動画をアップロードできる」)
+- Epic はプロダクト機能単位 (例: 試合レビュー MVP)
+- Story はユーザー価値単位 (例: 「プレイヤーとして直近の試合のコーチングを受けられる」)
 
 ## Documentation (docs/)
 
@@ -44,16 +49,16 @@ Bounded Context ごとにディレクトリを分割する（サブプロジェ�
 ```
 docs/
 ├── adr/              # リポジトリ全体の Architecture Decision Records
-├── match/            # 試合の受付・動画アップロード
+├── match/            # 試合の受付（Riot API から取得）
 │   ├── requirements/
 │   └── design/
-├── analysis/         # 動画 → プレイ行動の言語化
+├── analysis/         # 試合データ → 構造化された行動ログ
 │   ├── requirements/
 │   └── design/
 ├── coaching/         # フィードバック生成
 │   ├── requirements/
 │   └── design/
-├── knowledge/        # Wild Rift ナレッジ (MCP)
+├── knowledge/        # LoL (PC) ナレッジ（Data Dragon）
 │   ├── requirements/
 │   └── design/
 ├── user/             # ユーザープロフィール

@@ -1,8 +1,10 @@
 # ADR-0009: Wild Rift ナレッジは自作する。LoL (PC) のデータを流用しない
 
-- **Status**: Accepted
+- **Status**: Deferred
 - **Date**: 2026-08-22
 - **Deciders**: h.kawai
+
+> 2026-10-07: 最初の対象タイトルを LoL (PC) に変えたため保留。Wild Rift の判断としては今も有効で、再開時にそのまま効く。詳細は [ADR-0012](0012-lol-pc-as-first-title.md)。本文は決定時のまま残す。
 
 ## Context
 

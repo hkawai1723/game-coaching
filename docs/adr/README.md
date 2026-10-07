@@ -23,6 +23,7 @@
 | `Proposed` | 提案中。まだ実装してよい状態ではない |
 | `Accepted` | 採用。実装がこれに従う |
 | `Superseded by ADR-NNNN` | 後続の ADR に置き換えられた。**内容は書き換えず残す** |
+| `Deferred` | 決定自体は今も妥当だが、前提（対象タイトル・入力経路など）が当面外れたので保留。前提が戻ったら見直す |
 | `Deprecated` | 採用をやめたが置き換え先が無い |
 
 決定を覆すときは既存の ADR を書き換えず、新しい ADR を書いて古い方を `Superseded` にする。
@@ -33,16 +34,17 @@
 | # | タイトル | Status |
 |---|---------|--------|
 | [0001](0001-modular-monolith-with-spring-modulith.md) | モジュラーモノリスを Spring Modulith で機械的に強制する | Accepted |
-| [0002](0002-video-only-match-data-input.md) | 試合データの入力経路を動画のみとする | Accepted |
-| [0003](0003-gemini-for-play-narration.md) | 動画 → プレイ行動の言語化に Gemini を使う | Accepted |
+| [0002](0002-video-only-match-data-input.md) | 試合データの入力経路を動画のみとする | Superseded by ADR-0012 |
+| [0003](0003-gemini-for-play-narration.md) | 動画 → プレイ行動の言語化に Gemini を使う | Deferred |
 | [0004](0004-three-tier-test-strategy.md) | テストを 3 層に分け、ドメイン層は Spring を使わない | Accepted |
 | [0005](0005-payment-as-reusable-module.md) | payment をプロダクト非依存の再利用モジュールとして扱う | Accepted |
 | [0006](0006-jwt-verification-only.md) | 認証は別リポジトリの auth-api に委ね、api は JWT を検証するだけにする | Accepted |
-| [0007](0007-perception-pipeline-with-deterministic-grounding.md) | 知覚層を決定論的抽出で接地した多段パイプラインにする | Proposed |
+| [0007](0007-perception-pipeline-with-deterministic-grounding.md) | 知覚層を決定論的抽出で接地した多段パイプラインにする | Deferred |
 | [0008](0008-direct-llm-provider-apis-in-phase-1.md) | Phase 1 は LLM プロバイダーの API を直接叩き、マネージド基盤を採らない | Accepted |
-| [0009](0009-build-wild-rift-knowledge-ourselves.md) | Wild Rift ナレッジは自作する。LoL (PC) のデータを流用しない | Accepted |
+| [0009](0009-build-wild-rift-knowledge-ourselves.md) | Wild Rift ナレッジは自作する。LoL (PC) のデータを流用しない | Deferred |
 | [0010](0010-deterministic-combat-model-with-gank-risk-outside.md) | 戦闘勝率は決定論的な数値計算で求め、ガンクリスクをモデル外に置く | Accepted |
 | [0011](0011-staged-modifier-pipeline-for-combat-effects.md) | 戦闘効果の合成を段階パイプラインと宣言的モディファイアで表現する | Proposed |
+| [0012](0012-lol-pc-as-first-title.md) | 最初の対象タイトルを LoL (PC) にし、Wild Rift を保留する | Accepted |
 
 ## テンプレート
 

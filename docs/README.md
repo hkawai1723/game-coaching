@@ -6,10 +6,10 @@
 ```
 docs/
 ├── adr/          リポジトリ全体の Architecture Decision Records
-├── match/        試合の受付・動画アップロード・解析ジョブの状態管理
-├── analysis/     動画 → プレイ行動の言語化
+├── match/        試合の受付（Riot API から取得）・解析ジョブの状態管理
+├── analysis/     試合データ → 構造化された行動ログ
 ├── coaching/     行動ログ + ナレッジ → フィードバック生成
-├── knowledge/    Wild Rift ナレッジ (MCP)
+├── knowledge/    LoL (PC) ナレッジ（Data Dragon）
 ├── user/         ユーザープロフィール
 └── payment/      決済 (Stripe) — upagu と共用する再利用モジュール
 ```

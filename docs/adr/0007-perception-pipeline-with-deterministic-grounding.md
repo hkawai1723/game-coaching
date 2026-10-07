@@ -1,8 +1,10 @@
 # ADR-0007: 知覚層を決定論的抽出で接地した多段パイプラインにする
 
-- **Status**: Proposed
+- **Status**: Deferred
 - **Date**: 2026-08-19
 - **Deciders**: h.kawai
+
+> 2026-10-07: 最初の対象タイトルを LoL (PC) に変えたため保留。スパイクは実施しない。動画を入力にする時点で見直す。詳細は [ADR-0012](0012-lol-pc-as-first-title.md)。本文は決定時のまま残す。
 
 ## Context
 

@@ -1,8 +1,10 @@
 # ADR-0003: 動画 → プレイ行動の言語化に Gemini を使う
 
-- **Status**: Accepted
+- **Status**: Deferred
 - **Date**: 2026-08-19
 - **Deciders**: h.kawai
+
+> 2026-10-07: 最初の対象タイトルを LoL (PC) に変えたため保留。動画を入力にする時点で見直す。詳細は [ADR-0012](0012-lol-pc-as-first-title.md)。本文は決定時のまま残す。
 
 ## Context
 

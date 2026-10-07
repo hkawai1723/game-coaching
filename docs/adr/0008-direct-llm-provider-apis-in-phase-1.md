@@ -4,6 +4,8 @@
 - **Date**: 2026-08-22
 - **Deciders**: h.kawai
 
+> 2026-10-07 注記（[ADR-0012](0012-lol-pc-as-first-title.md)）: Phase 1 は LoL (PC) を Riot API で扱うので、知覚層の Gemini は使わない。LLM は推論層だけになる。「直叩きにする」という決定は変わらないが、Context の「Bedrock に Gemini が無い」という論点は Phase 1 では効かなくなった。推論層のモデルが決まった時点（Open Decisions #1）で見直す条件に当たるか確認する。
+
 ## Context
 
 ADR-0003 で知覚層に Gemini を使うと決めた。推論層のモデルは未定（CLAUDE.md Open Decisions #1）。
