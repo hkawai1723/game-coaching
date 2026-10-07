@@ -3,7 +3,7 @@
  * PreToolUse Hook: Guard Write/Edit to allowed paths only
  *
  * Allowed paths:
- * - This repository (process.cwd())
+ * - This repository (CLAUDE_PROJECT_DIR)
  * - Any local/handoff/ directory (for cross-repo handoff)
  *
  * Blocks any other location (exit code 2 — hard deny).
@@ -11,7 +11,12 @@
 
 const path = require("path");
 
-const REPO_ROOT = process.cwd();
+// cwd は Bash の \`cd\` で動くので repo root の判定には使えない。
+// Claude Code が渡す CLAUDE_PROJECT_DIR を優先し、無ければこのスクリプトの位置
+// (<repo>/.claude/scripts/hooks/) から遡って解決する。
+const REPO_ROOT = process.env.CLAUDE_PROJECT_DIR
+    ? path.resolve(process.env.CLAUDE_PROJECT_DIR)
+    : path.resolve(__dirname, "..", "..", "..");
 const HANDOFF_SEGMENT = path.sep + "local" + path.sep + "handoff" + path.sep;
 
 const MAX_STDIN = 1024 * 1024;

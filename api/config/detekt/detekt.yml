@@ -6,9 +6,9 @@ style:
     # .editorconfig の max_line_length = 140 に合わせる
     maxLineLength: 140
   ForbiddenComment:
-    # TODO はコードではなく Jira (GAME) で管理する
+    # TODO はコードではなく Jira (COACH) で管理する
     comments:
-      - reason: 'TODO はコードに残さず Jira (GAME) でチケット化する'
+      - reason: 'TODO はコードに残さず Jira (COACH) でチケット化する'
         value: 'TODO:'
 
 exceptions:

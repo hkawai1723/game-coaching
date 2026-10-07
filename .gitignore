@@ -17,3 +17,5 @@ frontend/dist/
 # Secrets
 .env
 .env.local
+
+settings.local.json
