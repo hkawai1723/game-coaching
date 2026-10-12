@@ -34,6 +34,10 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-validation")
 
+    // --- OpenAPI ---
+    // Swagger UI: /swagger-ui.html, OpenAPI JSON: /v3/api-docs
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
+
     // --- Spring Modulith ---
     // モジュール境界はレビューではなくビルドで守る。ModularityTest が verify() を実行する
     implementation("org.springframework.modulith:spring-modulith-starter-core")

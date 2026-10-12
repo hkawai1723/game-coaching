@@ -1,0 +1,16 @@
+# ローカル実行用（Phase 1 MVP は自分だけが使う前提）。
+#   docker compose up --build -d
+#   curl localhost:18080/actuator/health
+# ホスト側は 18080。8080 は ./gradlew bootRun 用に空けておく（API_PORT で上書き可）
+services:
+  api:
+    build: ./api
+    ports:
+      - "${API_PORT:-18080}:8080"
+    healthcheck:
+      # JRE イメージには curl が無いので bash の /dev/tcp で疎通だけ見る
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8080 && printf \"GET /actuator/health HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q UP <&3'"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
