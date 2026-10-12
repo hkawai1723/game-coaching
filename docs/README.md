@@ -6,8 +6,8 @@
 ```
 docs/
 ├── adr/          リポジトリ全体の Architecture Decision Records
-├── match/        試合の受付（Riot API から取得）・解析ジョブの状態管理
-├── analysis/     試合データ → 構造化された行動ログ
+├── ingestion/    試合の入力の取り込み（Riot API + 録画）・解析ジョブの状態管理
+├── playlog/      取り込んだ入力 → 構造化された行動ログ（timeline は決定論、録画は動画理解）
 ├── coaching/     行動ログ + ナレッジ → フィードバック生成
 ├── knowledge/    LoL (PC) ナレッジ（Data Dragon）
 ├── user/         ユーザープロフィール

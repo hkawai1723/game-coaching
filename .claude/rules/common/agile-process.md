@@ -49,10 +49,10 @@ Bounded Context ごとにディレクトリを分割する（サブプロジェ�
 ```
 docs/
 ├── adr/              # リポジトリ全体の Architecture Decision Records
-├── match/            # 試合の受付（Riot API から取得）
+├── ingestion/        # 試合の入力の取り込み（Riot API + 録画）
 │   ├── requirements/
 │   └── design/
-├── analysis/         # 試合データ → 構造化された行動ログ
+├── playlog/          # 取り込んだ入力 → 構造化された行動ログ
 │   ├── requirements/
 │   └── design/
 ├── coaching/         # フィードバック生成

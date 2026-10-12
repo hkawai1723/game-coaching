@@ -2,7 +2,8 @@
 
 - **Date**: 2026-08-22（設計）/ 2026-10-07（ファイル化）
 - **Status**: Deferred — 最初の対象を LoL (PC) に変えたため保留（ADR-0012）。
-  Wild Rift を再開するとき、または LoL で動画を入力に足すときに見直す
+  Wild Rift を再開するとき、または LoL で動画を入力に足すときに見直す。
+  → 2026-10-12、MVP で LoL の録画も入力にすると決めた（ADR-0015）。COACH-17 以降で見直す
 - **関連**: ADR-0007（知覚層パイプライン。Deferred）/ `../requirements/play-narration.md`（Deferred）
 
 2026-08-22 のセッションで設計し、handoff にだけ残っていたものをファイルにした。

@@ -9,7 +9,7 @@
 ## Context
 
 推論層（コーチング生成）が「その戦闘は仕掛けるべきではなかった」と言うには根拠が要る。
-根拠を LLM の主観判断に置くと検証不能になり、`docs/analysis/requirements/play-narration.md` で
+根拠を LLM の主観判断に置くと検証不能になり、`docs/playlog/requirements/play-narration.md` で
 最上位の品質リスクに置いた「もっともらしい嘘」を推論層側で作ることになる。
 
 ADR-0007 は知覚層について「数値・イベントは決定論的に取り、LLM には解釈だけをさせる」と決めた。

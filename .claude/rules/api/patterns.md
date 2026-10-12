@@ -11,8 +11,8 @@ paths:
 | Module      | 責務 | 他モジュールを知ってよいか |
 |-------------|------|--------------------------|
 | `api/web`   | クライアント向け REST。DTO 変換、Cookie 管理、認証フィルタ | 全モジュールの公開 API を呼ぶ |
-| `match`     | 試合の受付。Riot API からの取得、メタデータ、解析ジョブの状態 | `analysis` のイベントを購読 |
-| `analysis`  | 試合データ（timeline）→ 構造化された行動ログ。Phase 1 は LLM を使わない | なし（`match` から ID で駆動される） |
+| `ingestion` | 試合の入力の取り込み。Riot API からの取得と生データの保管、録画のアップロード・時刻同期・クリップ切り出し、解析ジョブの状態 | `playlog` のイベントを購読 |
+| `playlog`   | 取り込んだ入力 → 構造化された行動ログ。timeline からは決定論的に作り、録画は動画理解の port で言語化して足す | なし（`ingestion` から ID で駆動される） |
 | `coaching`  | 行動ログ → フィードバック生成（Claude / Gemini）。ナレッジ参照 | `knowledge` の公開 API |
 | `knowledge` | LoL (PC) のチャンピオン / アイテム / ルーン / パッチ情報（Data Dragon） | なし |
 | `user`      | ユーザープロフィール | なし |
@@ -54,8 +54,9 @@ fun `module boundaries are respected`() {
 LLM は差し替え前提。MVP のフィードバック生成は Gemini（ADR-0013）だが、後で Claude 等と比べ直す。
 **モデル選択はインフラ層の実装詳細であり、ドメイン層に漏らさない。**
 
-Phase 1（LoL (PC)）で LLM を使うのは `coaching` だけ。行動ログは Riot API のデータから
-決定論的に作る（ADR-0012）。動画を言語化する `PlayNarrator` port（ADR-0003）は Deferred なので実装しない。
+LLM を使うのは `coaching`（フィードバック生成）と `playlog` の動画理解（録画がある試合だけ。ADR-0015）。
+行動ログのうち Riot API 由来の部分は決定論的に作る（ADR-0012）。
+動画理解の方式・モデル・port の名前は COACH-17 で決める（CLAUDE.md Open Decisions #10）。決まるまで実装しない。
 
 ```kotlin
 // coaching/domain — 行動ログからフィードバックを生成する port
@@ -74,21 +75,24 @@ interface CoachingAdvisor {
 
 ## Match Source Abstraction
 
-Phase 1 の対象は LoL (PC)。入力は Riot API（`match-v5` + timeline）から取る（ADR-0012）。
-Wild Rift は保留中で、再開時は動画アップロードの経路を足す。**入力経路は port で抽象化しておく。**
-ただし Wild Rift 用の実装は書かない（YAGNI）。
+Phase 1 の対象は LoL (PC)。試合は Riot API（`match-v5` + timeline）から取る（ADR-0012）。
+**入力経路は port で抽象化しておく。** Wild Rift は保留中で、Wild Rift 用の実装は書かない（YAGNI）。
+
+録画（ADR-0015）は `MatchSource` の実装にしない。試合を受け付ける経路ではなく、Riot API の試合を補う任意の入力。
+保存は別の port（例: `VideoStorage`）の裏に隠す。
 
 ```kotlin
 interface MatchSource {
     fun load(ref: MatchRef): Result<RawMatch>
 }
-// RiotApiMatchSource（Phase 1）/ VideoMatchSource（Wild Rift 再開時）
+// RiotApiMatchSource（Phase 1）/ VideoMatchSource（Wild Rift 再開時。LoL の録画とは別物）
 ```
 
 - 対応タイトルは値オブジェクト `GameTitle`（`LOL` / `WILD_RIFT`）で表現する。boolean フラグにしない
 - **Riot API の型（DTO）をドメイン層に漏らさない。** `RawMatch` は自前のドメイン型
 - `knowledge` はタイトルごとにデータが違う。タイトルをキーに引く設計にしておく
 - Riot API のデータは全知視点（敵の位置も入っている）。「プレイヤーに見えていたか」と混同しない
+- **事実は Riot API が正。** 録画から取った情報で事実を上書きしない。動画由来の情報は区別して持つ
 
 ## Knowledge Access
 
@@ -105,7 +109,7 @@ MCP という形式にするかは未決定（root `CLAUDE.md` Open Decisions）
 
 - 実装は Exposed（ADR-0014）。`Table` 定義と行のマッピングは各モジュールの infrastructure 層に閉じ、
   ドメイン層に Exposed の型を出さない
-- テーブル名は `<module>_` で始める（例: `match_matches`）。マイグレーションは
+- テーブル名は `<module>_` で始める（例: `ingestion_matches`）。マイグレーションは
   `api/src/main/resources/db/migration/V<連番>__<module>_<内容>.sql`
 - 標準操作を定義: findAll, findById, create, update, delete
 - 具体実装がストレージの詳細（DB, API, ファイル）を扱う
@@ -136,5 +140,5 @@ CQRS 適用時:
 - モジュール間の直接呼び出しは禁止。`ApplicationEventPublisher` 経由でイベントを発行
 - イベントは非同期で処理される。トランザクション境界に注意
 - `@ApplicationModuleListener` でイベントをハンドリング
-- Riot API の取得と LLM 呼び出しは時間がかかるので、`match` → `analysis` → `coaching` はイベントで繋ぐ。
+- Riot API の取得と LLM 呼び出しは時間がかかるので、`ingestion` → `playlog` → `coaching` はイベントで繋ぐ。
   同期呼び出しでチェーンさせない

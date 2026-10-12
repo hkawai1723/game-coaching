@@ -24,22 +24,29 @@
 ## Product Overview
 
 プレイヤーが自分の Riot アカウントを指定すると、AI が試合を振り返ってコーチングする。
+試合の録画もアップロードすれば、ミクロ（位置取り・直前の行動）と「見えていた情報」まで踏まえて指摘する（ADR-0015）。
 
 ```
-試合データ取得（Riot API: match-v5 + timeline）
+[ingestion] 試合の取り込み
+   ├─ Riot API: match-v5 + timeline（必須）
+   └─ 録画のアップロード → ゲーム内時刻と同期 → 場面のクリップ切り出し（任意）
    ↓
-行動ログの組み立て（決定論的。LLM 不使用）       ← 「何が起きたか」を構造化された行動ログに
+[playlog] 行動ログの組み立て                     ← 「何が起きたか」を構造化された行動ログに
+   ├─ timeline から（決定論的。LLM 不使用）
+   └─ 録画のクリップから（動画理解。方式・モデルは COACH-17 で決める）
    ↓
-コーチングフィードバック生成（MVP は Gemini。ADR-0013） ← 「どうすべきだったか」
+[coaching] フィードバック生成（MVP は Gemini。ADR-0013） ← 「どうすべきだったか」
    ↓
 フィードバック表示
 ```
 
-**事実（数値・イベント）は Riot API が正。LLM には解釈だけさせる。** Phase 1 で LLM を使うのはコーチング生成だけ。
+**事実（数値・イベント）は Riot API が正。LLM には解釈だけさせる。** 録画から取った情報で事実を上書きしない。
+LLM を使うのは、コーチング生成と、録画がある試合の動画理解だけ。録画が無い試合でもコーチングは成立させる。
 
 Riot API のデータは**全知視点**（敵の位置も入っている）で、プレイヤーに見えていたかは分からない。
 「データにはあるがプレイヤーには見えていなかった情報」でプレイヤーを責めないこと
-（`docs/coaching/requirements/coaching-quality.md` FR-5）。
+（`docs/coaching/requirements/coaching-quality.md` FR-5）。録画があれば見えていたかを判定し、
+無ければ「不明」として控えめに扱う。
 
 ### Wild Rift（保留中）
 
@@ -56,8 +63,8 @@ React SPA (Vite)
       |
    api (Kotlin / Spring Modulith — modular monolith)
    ├── api/web    クライアント向けプレゼンテーション層（Cookie 管理、DTO 変換）
-   ├── match      試合の受付（Riot API から取得）・解析ジョブ
-   ├── analysis   試合データ → 構造化された行動ログ
+   ├── ingestion  試合の入力の取り込み（Riot API + 録画）・解析ジョブ
+   ├── playlog    取り込んだ入力 → 構造化された行動ログ
    ├── coaching   行動ログ → フィードバック生成
    ├── combat     戦闘勝率の決定論的計算（ADR-0010。未着手）
    ├── knowledge  LoL ナレッジ（チャンピオン / アイテム / パッチ）
@@ -79,8 +86,8 @@ React SPA (Vite)
 | Cognito      | 認証基盤（auth-api の内部実装。このリポジトリからは見えない） |
 | auth-api     | IdentityProvider 抽象化、独自 JWT 発行 (ES256)、RBAC |
 | api/web      | Web 向け REST。refresh_token を HttpOnly Cookie で管理 |
-| api/match    | Riot API からの試合取得、解析ジョブの状態管理。Riot API の型を port の裏に隠す |
-| api/analysis | 試合データ → 行動ログ（決定論的） |
+| api/ingestion | Riot API からの試合取得と生データの保管、録画のアップロード・時刻同期・クリップ切り出し、解析ジョブの状態管理。Riot API の型を port の裏に隠す |
+| api/playlog  | 取り込んだ入力 → 行動ログ。timeline からは決定論的に作り、録画は動画理解の port で言語化して足す |
 | api/coaching | 行動ログ + ナレッジ → フィードバック。LLM プロバイダーを port の裏に隠す |
 | api/combat   | 戦闘勝率の計算。外部 I/O なしの純粋ドメイン、プロダクト非依存（ADR-0010） |
 | api/knowledge| LoL の静的情報を提供（Data Dragon が一次情報源） |
@@ -175,7 +182,8 @@ MCP という形式にするかは未決定（Open Decisions #2）。
 | ツールチェーン | kover / Vitest / Playwright 導入済み（閾値は 0 から始めるラチェット運用）。Orval / CI は未整備 |
 | Git | `main` + 作業ブランチ。pre-commit hook 稼働中 |
 | 対象タイトル | **LoL (PC)**。Wild Rift は保留（ADR-0012） |
-| Riot API 連携 / Knowledge | 未着手 |
+| Riot API 連携 / 録画の取り込み / Knowledge | 未着手 |
+| モジュール | 設計上は `ingestion` / `playlog` / `coaching` ほか（ADR-0015 で `match` / `analysis` から改名）。コードはまだ無い |
 | ローカル実行 | `docker compose up --build -d` で postgres → api が起動（api :18080 / postgres :15432）。設定は `.env.example` |
 | 統合テスト | Testcontainers の PostgreSQL。**`./gradlew test` / `build` は Docker が必要**（`unitTest` は不要） |
 | インフラ（本番） | 未着手 |
@@ -184,9 +192,11 @@ MCP という形式にするかは未決定（Open Decisions #2）。
 
 ## Roadmap
 
-### Phase 1（現在）— LoL (PC) を Riot API + 外部 LLM で成立させる
+### Phase 1（現在）— LoL (PC) を Riot API + 録画 + 外部 LLM で成立させる
 
-Riot API で事実を取り → 決定論的に行動ログを作り → Claude/Gemini でフィードバック。
+Riot API で事実を取り → 決定論的に行動ログを作り → 録画があればミクロと「見えていた情報」を足し →
+Gemini でフィードバック（ADR-0013 / 0015）。録画は任意で、無くてもコーチングは返る。
+ローカル MVP（エピック COACH-5）は Sprint 1〜4 で Riot API だけの経路を通し、Sprint 5〜8 で録画を足す。
 まず「使えるコーチング」の基準を作る。差別化はデータ量ではなくコーチング品質
 （指摘の絞り込み、宿題の機械検証、意図の入力。`docs/coaching/requirements/coaching-quality.md`）。
 
@@ -196,10 +206,11 @@ Riot API で事実を取り → 決定論的に行動ログを作り → Claude/
   **後から学習・評価に使える形で保存する**（Riot の利用規約・ユーザー同意の設計も込みで）
 - 「良いコーチングとは何か」の評価セットを作る。人手で正解を付けた試合を数十件持つ
 
-### Phase 2 以降 — 動画と Wild Rift（順序・時期は未定）
+### Phase 2 以降 — 動画の知覚層の内製と Wild Rift（順序・時期は未定）
 
 Riot API の timeline は 1 分間隔なので、ミクロ（操作・位置取り）は取れない。
-ここを扱うには動画が要り、Wild Rift はそもそも動画しか入力が無い。どちらも動画の知覚層が前提になる。
+Phase 1 では録画の場面クリップを動画理解に渡して補う想定（方式は COACH-17 で決める）。
+Wild Rift はそもそも動画しか入力が無いので、試合全体を動画から取る知覚層が前提になる。
 
 内製の切り分けは 2 層で考える:
 
@@ -210,10 +221,10 @@ Riot API の timeline は 1 分間隔なので、ミクロ（操作・位置取�
   ここは LLM の領分。自前で LLM を訓練するのではなく、プロンプト + 構造化出力 + ナレッジ参照で
   精度を出し、必要なら後から蒸留する
 
-`PlayNarrator` port（ADR-0003）が動画の知覚層の差し替え境界。
-動画を足すときはこの port の実装から始める（ADR-0003 / 0007 は Deferred。そのとき見直す）。
+`playlog` の動画理解 port が、動画の知覚層の差し替え境界になる（名前は COACH-17 で決める。
+ADR-0003 の `PlayNarrator` を流用するかも含む）。ADR-0003 / 0007 は Deferred で、COACH-17 で見直す。
 
-Wild Rift を再開するときは `MatchSource` に `VideoMatchSource` を足す。`GameTitle`（`LOL` / `WILD_RIFT`）で
+Wild Rift を再開するときは `MatchSource` に `VideoMatchSource` を足す（LoL の録画は `MatchSource` ではなく補足入力。ADR-0015）。`GameTitle`（`LOL` / `WILD_RIFT`）で
 拡張の余地だけ残し、Wild Rift 固有の実装は今は書かない（YAGNI）。
 
 ## Open Decisions（未決定）
@@ -224,12 +235,14 @@ Wild Rift を再開するときは `MatchSource` に `VideoMatchSource` を足�
    `CoachingAdvisor` port の裏に隠し、COACH-16 の振り返りか評価セットが揃った時点で Claude と比べ直す
 2. **ナレッジを MCP にするか・置き場所** — MCP にする / モジュール内で直接取得 / 既存の LoL 用 MCP を使う
 3. **Wild Rift 再開時のアプリ構成** — 同一アプリ / 別アプリ（再開時期も未定）
-4. ~~**DB の構成**~~ — **PostgreSQL + Exposed + Flyway に決定**（ADR-0014）。動画の保存先は COACH-17 で決める
+4. ~~**DB の構成**~~ — **PostgreSQL + Exposed + Flyway に決定**（ADR-0014）。録画の保存先は COACH-17 で決める（#10）
 5. **フロントの採用ライブラリ** — upagu の web に揃える前提（TanStack Router/Query, Zustand, ky, Orval）だが未導入
 6. **課金モデル** — 従量 / 定額。Riot の Developer Policies で有料提供の条件を確認してから決める
 7. **Riot API の利用条件** — Production API Key の申請、コーチング用途の可否、データ保存・二次利用の範囲。**未確認**
 8. **Riot アカウントの紐付け** — Riot ID 入力だけ（所有確認なし）/ RSO（Riot Sign On。審査あり）
 9. **`combat` の MVP カバー範囲** — 対象チャンピオン / アイテム（ADR-0010）
+10. **録画の動画理解** — 方式（場面クリップをマルチモーダル LLM に渡す / 決定論的な知覚層）、モデル、
+    `playlog` の port の名前、録画の保存先、1 試合あたりのコスト。COACH-17 で ADR にする（ADR-0015）
 
 ## Handoff
 

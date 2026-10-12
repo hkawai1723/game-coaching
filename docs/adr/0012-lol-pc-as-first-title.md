@@ -1,6 +1,6 @@
 # ADR-0012: 最初の対象タイトルを LoL (PC) にし、Wild Rift を保留する
 
-- **Status**: Accepted
+- **Status**: Accepted（Decision 2「動画は Phase 1 で扱わない」と Decision 3 は ADR-0015 で改めた）
 - **Date**: 2026-10-07
 - **Deciders**: h.kawai
 
@@ -110,7 +110,7 @@ LoL (PC) は CLAUDE.md ロードマップの Phase 3 に置き、`MatchSource` p
 
 低い。Wild Rift を再開するときは、Deferred の ADR を見直して `VideoMatchSource` を足す。
 `MatchSource` port と `GameTitle` のおかげで、`match` より下流は書き換えずに済む設計を保つ。
-Wild Rift 向けの評価セットのフォーマットは `docs/analysis/design/eval-set-format.md` に保留で残してある。
+Wild Rift 向けの評価セットのフォーマットは `docs/playlog/design/eval-set-format.md` に保留で残してある。
 
 ## Alternatives Considered
 

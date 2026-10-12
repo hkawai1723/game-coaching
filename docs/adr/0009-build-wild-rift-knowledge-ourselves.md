@@ -13,7 +13,7 @@
 
 1. 推論層（コーチング生成）が「このアイテムはこのパッチでどう変わったか」を参照する
 2. 知覚層の言語化出力を制約する語彙（enum）を供給する
-   （`docs/analysis/requirements/play-narration.md` FR-3）
+   （`docs/playlog/requirements/play-narration.md` FR-3）
 
 既存の資産を流用できるなら自作したくない。2026-08 時点で調査した。
 
@@ -47,7 +47,7 @@ Wild Rift のナレッジとして流用しない。**
 流用は選択肢として明示的に却下する。理由:
 
 > LoL (PC) のアイテムやスキルを前提に助言すると、**Wild Rift に存在しないアイテムを推奨する**。
-> これは `docs/analysis/requirements/play-narration.md` で最上位の品質リスクに置いた
+> これは `docs/playlog/requirements/play-narration.md` で最上位の品質リスクに置いた
 > 「もっともらしい嘘」を、こちらから作りに行く行為にあたる。コーチングプロダクトとして
 > 最も避けるべき失敗そのもの。
 

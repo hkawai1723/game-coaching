@@ -106,8 +106,8 @@ Create detailed steps with:
 # Implementation Plan: 試合動画のアップロードと解析ジョブ
 
 ## Overview
-プレイヤーが Wild Rift の試合動画をアップロードし、Gemini でプレイ行動を言語化して
-行動ログを生成するまで。コーチングフィードバック生成は次フェーズ。
+プレイヤーが LoL の試合の録画をアップロードして Riot API の試合に紐付け、デス前後のクリップを
+動画理解で言語化して行動ログに足すまで。コーチングフィードバック生成は次フェーズ。
 
 ## Requirements
 - 動画は最大 2GB / mp4・mov。アップロード中の進捗表示と再試行ができる
@@ -116,17 +116,18 @@ Create detailed steps with:
 - 同じ動画を再アップロードしても LLM コストを二重に払わない
 
 ## Architecture Changes
-- `match` モジュール: `MatchVideo` Aggregate（動画メタデータ、content hash、所有者 ID）、
+- `ingestion` モジュール: `MatchVideo` Aggregate（動画メタデータ、content hash、所有者 ID、紐付く Riot の match ID）、
   `AnalysisJob` Aggregate（状態遷移）
-- `analysis` モジュール: `PlayNarrator` port + `GeminiPlayNarrator` 実装
+- `playlog` モジュール: `SceneNarrator` port + `GeminiSceneNarrator` 実装
+  （port の名前とモデルは例。実際は COACH-17 の ADR に従う）
 - モジュール間は `MatchVideoUploaded` / `NarrationCompleted` イベントで接続（直接呼び出し禁止）
 - `api/web`: POST /api/v1/matches（署名付き URL 発行）、GET /api/v1/analyses/{id}
-- テーブル: `match_video`, `analysis_job`（どちらも match/analysis モジュールが所有）
+- テーブル: `ingestion_videos`, `ingestion_analysis_jobs`（どちらも ingestion モジュールが所有）
 
 ## Implementation Steps
 
 ### Phase 1: 受付とジョブ管理 (api)
-1. **MatchVideo / AnalysisJob のドメインモデル** (File: api/src/main/kotlin/.../match/domain/)
+1. **MatchVideo / AnalysisJob のドメインモデル** (File: api/src/main/kotlin/.../ingestion/domain/)
    - Action: 状態遷移を sealed class で表現し、不正遷移を型で防ぐ
    - Why: 状態遷移のバグは後から追うのが最も高くつく
    - Dependencies: なし
@@ -140,13 +141,13 @@ Create detailed steps with:
    - Risk: Medium — 所有者以外がアップロード先に書けないこと
 
 ### Phase 2: 解析 (api)
-3. **PlayNarrator port の定義** (File: api/src/main/kotlin/.../analysis/domain/PlayNarrator.kt)
-   - Action: 動画参照 → 行動ログ の interface。SDK の型を出さない
+3. **SceneNarrator port の定義** (File: api/src/main/kotlin/.../playlog/domain/SceneNarrator.kt)
+   - Action: クリップ参照 + Riot API の事実 → 動画由来の行動 の interface。SDK の型を出さない
    - Why: 将来 Gemini から自社モデルへ差し替える境界（root CLAUDE.md のロードマップ参照）
    - Dependencies: なし
    - Risk: Low
 
-4. **GeminiPlayNarrator 実装** (File: api/src/main/kotlin/.../analysis/infrastructure/gemini/)
+4. **GeminiSceneNarrator 実装** (File: api/src/main/kotlin/.../playlog/infrastructure/gemini/)
    - Action: 構造化出力で行動ログを受け取り、パース失敗時は 1 度だけ再試行
    - Why: 自由文で受けると後続の処理が壊れる
    - Dependencies: Step 3
