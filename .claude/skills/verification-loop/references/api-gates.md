@@ -7,7 +7,7 @@
 | # | Gate | Command | 状態 | 失敗時 |
 |---|------|---------|------|--------|
 | 1 | 高速テスト（Spring 起動なし・**モジュール境界検証を含む**） | `./gradlew unitTest` | 利用可 | 報告して修正。ここが速いので最初に回す |
-| 2 | Build + Test（統合含む） | `./gradlew build` | 利用可 | STOP。以降のゲートを回さず修正する |
+| 2 | Build + Test（統合含む。**Docker 必須**） | `./gradlew build` | 利用可 | STOP。以降のゲートを回さず修正する |
 | 3 | Lint | `./gradlew detekt` | 利用可 | 報告して修正（`autoCorrect = false` なので手で直す） |
 | 4 | Format | `./gradlew spotlessCheck` | 利用可 | 報告。`--with-fix` 時のみ `spotlessApply` |
 | 5 | Coverage (kover) | `./gradlew koverVerify` | 利用可 | 報告して修正。閾値は `build.gradle.kts` の `kover.reports.verify.rule.minBound` |
@@ -35,6 +35,8 @@ cd api
   実行する（Spring 起動なしなので速い）。「境界を壊していないか」を別途レビューで探さないこと
 - **`@Tag("external")` は常に除外されている。** LLM 等を実際に叩くテストがゲートで課金を発生させない
   ようにするため。ここを緩めない
+- **統合テストは Testcontainers で PostgreSQL を起動する。** Docker が動いていないと `build` / `test` が
+  落ちる。その場合はコードの問題ではないので、Docker を起動してから再実行する（`unitTest` は Docker 不要）
 - **`build` は `test` を含む。** 別途 `./gradlew test` を回す必要はない。二重に回すと待ち時間が倍になる
 - **Type check は独立したゲートではない。** Kotlin は型エラーがそのままコンパイルエラーなので、
   `build` が通れば型は通っている。`tsc --noEmit` 相当を探さないこと

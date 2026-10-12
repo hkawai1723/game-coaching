@@ -45,6 +45,8 @@
 | [0010](0010-deterministic-combat-model-with-gank-risk-outside.md) | 戦闘勝率は決定論的な数値計算で求め、ガンクリスクをモデル外に置く | Accepted |
 | [0011](0011-staged-modifier-pipeline-for-combat-effects.md) | 戦闘効果の合成を段階パイプラインと宣言的モディファイアで表現する | Proposed |
 | [0012](0012-lol-pc-as-first-title.md) | 最初の対象タイトルを LoL (PC) にし、Wild Rift を保留する | Accepted |
+| [0013](0013-gemini-for-coaching-generation-in-mvp.md) | MVP のコーチング生成には Gemini を使い、差し替えられる形にしておく | Accepted |
+| [0014](0014-postgresql-with-exposed-and-flyway.md) | 永続化は PostgreSQL + Exposed + Flyway にし、テーブルはモジュール名を頭に付けて所有する | Accepted |
 
 ## テンプレート
 

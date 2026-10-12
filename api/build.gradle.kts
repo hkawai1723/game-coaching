@@ -42,6 +42,16 @@ dependencies {
     // モジュール境界はレビューではなくビルドで守る。ModularityTest が verify() を実行する
     implementation("org.springframework.modulith:spring-modulith-starter-core")
 
+    // --- Database ---
+    // ORM は upagu / auth-api と同じ Exposed に揃える。payment を upagu と共用するため（ADR-0014）
+    implementation("org.springframework.boot:spring-boot-starter-jdbc")
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
+    implementation("org.flywaydb:flyway-database-postgresql")
+    implementation("org.jetbrains.exposed:exposed-core:1.3.1")
+    implementation("org.jetbrains.exposed:exposed-jdbc:1.3.1")
+    implementation("org.jetbrains.exposed:exposed-java-time:1.3.1")
+    runtimeOnly("org.postgresql:postgresql")
+
     // --- Kotlin ---
     implementation("org.jetbrains.kotlin:kotlin-reflect")
 
@@ -49,6 +59,10 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.modulith:spring-modulith-starter-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    // 統合テスト（@Tag("integration")）用の PostgreSQL。H2 では JSONB を再現できないので使わない
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+    testImplementation("org.testcontainers:testcontainers-postgresql")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

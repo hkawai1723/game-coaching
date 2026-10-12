@@ -1,6 +1,13 @@
 spring:
   application:
     name: api
+  # 接続情報は環境変数で渡す。デフォルトは compose.yaml の postgres にホストから繋ぐ値（./gradlew bootRun 用）
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:15432/coach}
+    username: ${DB_USERNAME:coach}
+    password: ${DB_PASSWORD:coach}
+  flyway:
+    locations: classpath:db/migration
 
 springdoc:
   swagger-ui:

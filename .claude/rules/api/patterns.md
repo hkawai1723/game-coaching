@@ -51,7 +51,7 @@ fun `module boundaries are respected`() {
 
 ## LLM Provider Abstraction
 
-LLM は差し替え前提（フィードバック生成を Claude と Gemini のどちらにするかは未確定）。
+LLM は差し替え前提。MVP のフィードバック生成は Gemini（ADR-0013）だが、後で Claude 等と比べ直す。
 **モデル選択はインフラ層の実装詳細であり、ドメイン層に漏らさない。**
 
 Phase 1（LoL (PC)）で LLM を使うのは `coaching` だけ。行動ログは Riot API のデータから
@@ -103,6 +103,10 @@ MCP という形式にするかは未決定（root `CLAUDE.md` Open Decisions）
 
 データアクセスを一貫したインターフェースの背後に隠蔽する:
 
+- 実装は Exposed（ADR-0014）。`Table` 定義と行のマッピングは各モジュールの infrastructure 層に閉じ、
+  ドメイン層に Exposed の型を出さない
+- テーブル名は `<module>_` で始める（例: `match_matches`）。マイグレーションは
+  `api/src/main/resources/db/migration/V<連番>__<module>_<内容>.sql`
 - 標準操作を定義: findAll, findById, create, update, delete
 - 具体実装がストレージの詳細（DB, API, ファイル）を扱う
 - ビジネスロジックは抽象インターフェースに依存し、ストレージ機構に依存しない

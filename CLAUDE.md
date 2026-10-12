@@ -30,7 +30,7 @@
    ↓
 行動ログの組み立て（決定論的。LLM 不使用）       ← 「何が起きたか」を構造化された行動ログに
    ↓
-コーチングフィードバック生成（Claude or Gemini） ← 「どうすべきだったか」
+コーチングフィードバック生成（MVP は Gemini。ADR-0013） ← 「どうすべきだったか」
    ↓
 フィードバック表示
 ```
@@ -66,7 +66,7 @@ React SPA (Vite)
       |        \         \              \
     REST        \         \              \
       |          \         \              \
-  auth-api    PostgreSQL   Riot API                LLM API (Claude / Gemini)
+  auth-api    PostgreSQL   Riot API                LLM API (MVP は Gemini)
   (別リポジトリ)            (match-v5 / Data Dragon)
       |
    Cognito
@@ -161,13 +161,13 @@ MCP という形式にするかは未決定（Open Decisions #2）。
 - 未導入のツールは hook 側が自動で skip する。導入すればそのまま有効になる
 - まとめて回すなら `/verification-loop` スキル
 
-## Current State（2026-10-07 時点）
+## Current State（2026-10-12 時点）
 
 **存在しないものを前提にしたコードを書かないこと。**
 
 | 項目 | 状態 |
 |------|------|
-| `api` | Spring Web (webmvc) / Actuator / Validation / **Spring Modulith 2.0.5** 導入済み。DB / Flyway は未着手 |
+| `api` | Spring Web (webmvc) / Actuator / Validation / **Spring Modulith 2.0.5** / springdoc 導入済み。DB は PostgreSQL + Exposed + Flyway（ADR-0014） |
 | モジュール境界 | `ModularityTest` が `ApplicationModules.verify()` を実行（`./gradlew unitTest` に含まれる） |
 | Lint / Format | **導入済み** — api: spotless(ktlint) + detekt / frontend: Prettier + ESLint |
 | pre-commit hook | **導入済み** — `scripts/.githooks/pre-commit`。`api/` で `./gradlew` を実行すると自動設定 |
@@ -176,7 +176,9 @@ MCP という形式にするかは未決定（Open Decisions #2）。
 | Git | `main` + 作業ブランチ。pre-commit hook 稼働中 |
 | 対象タイトル | **LoL (PC)**。Wild Rift は保留（ADR-0012） |
 | Riot API 連携 / Knowledge | 未着手 |
-| インフラ / DB | 未着手 |
+| ローカル実行 | `docker compose up --build -d` で postgres → api が起動（api :18080 / postgres :15432）。設定は `.env.example` |
+| 統合テスト | Testcontainers の PostgreSQL。**`./gradlew test` / `build` は Docker が必要**（`unitTest` は不要） |
+| インフラ（本番） | 未着手 |
 
 導入したら `.claude/rules/` と `.claude/skills/verification-loop/references/` の状態表を更新すること。
 
@@ -218,10 +220,11 @@ Wild Rift を再開するときは `MatchSource` に `VideoMatchSource` を足�
 
 決めずに進んでいるもの。**未決定を前提にした実装をしないこと。** 決まったらここを更新する。
 
-1. **フィードバック生成のモデル** — Claude と Gemini のどちらにするか。Phase 1 で LLM を使うのはここだけ
+1. ~~**フィードバック生成のモデル**~~ — **MVP は Gemini（Flash 系）に決定**（ADR-0013）。
+   `CoachingAdvisor` port の裏に隠し、COACH-16 の振り返りか評価セットが揃った時点で Claude と比べ直す
 2. **ナレッジを MCP にするか・置き場所** — MCP にする / モジュール内で直接取得 / 既存の LoL 用 MCP を使う
 3. **Wild Rift 再開時のアプリ構成** — 同一アプリ / 別アプリ（再開時期も未定）
-4. **DB の構成** — PostgreSQL 想定だが未着手。動画を扱わないのでオブジェクトストレージは Phase 1 では不要の見込み
+4. ~~**DB の構成**~~ — **PostgreSQL + Exposed + Flyway に決定**（ADR-0014）。動画の保存先は COACH-17 で決める
 5. **フロントの採用ライブラリ** — upagu の web に揃える前提（TanStack Router/Query, Zustand, ky, Orval）だが未導入
 6. **課金モデル** — 従量 / 定額。Riot の Developer Policies で有料提供の条件を確認してから決める
 7. **Riot API の利用条件** — Production API Key の申請、コーチング用途の可否、データ保存・二次利用の範囲。**未確認**

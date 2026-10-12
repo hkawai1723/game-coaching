@@ -23,7 +23,7 @@ Spring コンテキストを起動しない。
 | 層 | 書き方 | タグ | コマンド | 速度 |
 |----|--------|------|----------|------|
 | ドメイン / アプリケーション | **純粋な Kotlin テスト**。`@SpringBootTest` 禁止 | なし | `./gradlew unitTest` | 秒 |
-| モジュール統合 | `@ApplicationModuleTest` | `@Tag("integration")` | `./gradlew test` | 十数秒〜 |
+| モジュール統合 | `@ApplicationModuleTest`。DB は `@Import(TestcontainersConfiguration::class)` | `@Tag("integration")` | `./gradlew test`（**Docker 必須**） | 十数秒〜 |
 | 外部 API 実呼び出し | LLM / auth-api を実際に叩く | `@Tag("external")` | 明示指定時のみ | 分 |
 
 - **`unitTest` が第一の検証ループ。** 実装中はこれを回す。`test` は commit 前・PR 前
